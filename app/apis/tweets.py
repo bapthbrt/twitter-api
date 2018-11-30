@@ -1,3 +1,4 @@
+from flask_login import login_required
 from flask_restplus import Namespace, Resource, fields
 from flask import abort
 from app.models import Tweet
@@ -5,12 +6,14 @@ from app import db
 
 api = Namespace('tweets')
 
+
 class JsonUser(fields.Raw):
     def format(self, value):
         return {
             'username': value.username,
             'email': value.email
         }
+
 
 json_tweet = api.model('Tweet', {
     'id': fields.Integer,
@@ -22,6 +25,7 @@ json_tweet = api.model('Tweet', {
 json_new_tweet = api.model('New tweet', {
     'text': fields.String(required=True)
 })
+
 
 @api.route('/<int:id>')
 @api.response(404, 'Tweet not found')
@@ -54,6 +58,7 @@ class TweetResource(Resource):
             db.session.commit()
             return None
 
+
 @api.route('')
 class TweetsResource(Resource):
     @api.marshal_with(json_tweet, code=201)
@@ -70,6 +75,7 @@ class TweetsResource(Resource):
             return abort(422, "Tweet text can't be empty")
 
     @api.marshal_list_with(json_tweet)
+    @login_required
     def get(self):
         tweets = db.session.query(Tweet).all()
         return tweets

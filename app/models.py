@@ -1,4 +1,8 @@
+import uuid
 from datetime import datetime
+
+from flask_login import UserMixin
+from sqlalchemy.event import listens_for
 from sqlalchemy.schema import ForeignKey
 
 from app import db
@@ -14,7 +18,8 @@ class Tweet(db.Model):
     def __repr__(self):
         return f"<Tweet #{self.id}>"
 
-class User(db.Model):
+
+class User(db.Model, UserMixin):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80))
@@ -24,3 +29,12 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User {self.username}>"
+
+    def check_api_key(self, api_key):
+        return db.session.query(User).filter_by(api_key=api_key).first()
+
+@listens_for(User, 'before_insert')
+def generate_license(mapper, connect, self):
+    if not self.api_key:
+        self.api_key = str(uuid.uuid4())
+    return self.api_key
